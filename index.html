@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>✨ Real Time Object Detection</title>
+
+<style>
+body {
+    margin: 0;
+    padding: 0;
+    background: black;
+    overflow-x: hidden;
+    font-family: 'Segoe UI', sans-serif;
+    color: #00ffff;
+    text-align: center;
+    animation: bgMove 20s linear infinite;
+    background-image: repeating-linear-gradient(
+        45deg,
+        #1a1a1a 0px,
+        #1a1a1a 2px,
+        transparent 2px,
+        transparent 20px
+    );
+}
+
+@keyframes bgMove {
+    0% { background-position: 0 0; }
+    100% { background-position: 400px 400px; }
+}
+
+h1 {
+    font-size: 2.5rem;
+    margin-top: 40px;
+    text-shadow: 0 0 10px #00ffff;
+}
+
+.subtitle {
+    font-size: 1.2rem;
+    margin-top: 10px;
+}
+
+.crafted {
+    color: #ff00ff;
+    font-weight: bold;
+    text-shadow: 0 0 6px #ff00ff;
+}
+
+.highlight {
+    color: #00ff99;
+    font-weight: bold;
+    text-shadow: 0 0 6px #00ff99;
+}
+
+.controls {
+    margin: 30px;
+}
+
+button {
+    padding: 10px 24px;
+    font-size: 16px;
+    margin: 10px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+    box-shadow: 0 0 10px rgba(0,255,255,0.3);
+}
+
+.start-btn {
+    background: linear-gradient(90deg, #00ffcc, #00bfff);
+    color: black;
+}
+
+.stop-btn {
+    background: linear-gradient(90deg, #ff4444, #ff0000);
+    color: white;
+}
+
+button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255,255,255,0.5);
+}
+
+#video-box img {
+    border: 4px solid #00ffff;
+    border-radius: 10px;
+    margin-top: 20px;
+    box-shadow: 0 0 12px #00ffff;
+}
+
+#objects {
+    margin-top: 30px;
+    font-size: 20px;
+    font-weight: bold;
+    text-shadow: 0 0 5px #00ffff;
+}
+</style>
+</head>
+
+<body>
+
+<h1>✨ Real Time Object Detection</h1>
+
+<h3 class="subtitle">
+    🧠 <span class="crafted">Crafted with Code</span> by
+    <span class="highlight">Amit Kumar</span>
+</h3>
+
+<div class="controls">
+    <button class="start-btn" onclick="startDetection()">🟢 Activate Stream</button>
+    <button class="stop-btn" onclick="stopDetection()">🔴 Deactivate Stream</button>
+</div>
+
+<div id="video-box"></div>
+
+<div id="objects">
+    🔎 <span style="color:#00ffcc;">Detected Objects ➤</span> None
+</div>
+
+<script>
+let speechOn = true;
+let lastSpoken = [];
+
+function speak(text) {
+    if (!speechOn || text.length === 0) return;
+
+    const msg = new SpeechSynthesisUtterance(text.join(', '));
+    msg.lang = "en-US";
+    speechSynthesis.cancel();
+    speechSynthesis.speak(msg);
+}
+
+function startDetection() {
+    fetch('/start_stream', { method: 'POST' });
+    document.getElementById("video-box").innerHTML =
+        '<img src="/video_feed" width="720"/>';
+    fetchObjects();
+}
+
+function stopDetection() {
+    fetch('/stop_stream', { method: 'POST' });
+    document.getElementById("video-box").innerHTML = "";
+    document.getElementById("objects").innerHTML =
+        '🔎 <span style="color:#00ffcc;">Detected Objects ➤</span> None';
+    speechSynthesis.cancel();
+}
+
+function fetchObjects() {
+    fetch('/get_objects')
+        .then(res => res.json())
+        .then(data => {
+            if (data.length > 0) {
+                document.getElementById("objects").innerHTML =
+                    '🔎 <span style="color:#00ffcc;">Detected Objects ➤</span> '
+                    + data.join(', ');
+
+                if (data.toString() !== lastSpoken.toString()) {
+                    speak(data);
+                    lastSpoken = data;
+                }
+            } else {
+                document.getElementById("objects").innerHTML =
+                    '🔎 <span style="color:#00ffcc;">Detected Objects ➤</span> None';
+            }
+        })
+        .catch(err => console.error(err));
+
+    if (document.getElementById("video-box").innerHTML !== "") {
+        setTimeout(fetchObjects, 2000);
+    }
+}
+</script>
+
+</body>
+</html>
